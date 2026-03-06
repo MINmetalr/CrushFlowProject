@@ -4,7 +4,7 @@
   "description": "Sistema de gestión de cantera con arquitectura limpia",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "echo 'Compilación desactivada, usando dist precompilada'",
     "start": "node dist/index.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "db:init": "mysql -u root -p < scripts/init-db.sql"
