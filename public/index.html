@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CrushFlow V2</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+/* ── Reset & Variables ──────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a3a5c;--blue:#1a5276;--lblue:#2e86c1;--sky:#aed6f1;
+  --green:#1e8449;--lgreen:#27ae60;--red:#922b21;--orange:#d68910;
+  --gray:#5d6d7e;--lgray:#f4f6f7;--mgray:#d5d8dc;--white:#fff;
+  --black:#1c2833;--text:#2c3e50;--border:#e5e9ef;
+  --sidebar-w:260px;--topbar-h:60px;--radius:10px;--shadow:0 2px 12px rgba(0,0,0,.08);
+  --trans:.18s ease;
+}
+html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;color:var(--text);background:var(--lgray)}
+
+/* ── Login Screen ───────────────────────────────────────────────────────── */
+#login-screen{
+  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,var(--navy) 0%,var(--lblue) 100%);z-index:9999;
+}
+.login-card{
+  background:var(--white);border-radius:18px;padding:48px 44px;width:min(96vw,420px);
+  box-shadow:0 20px 60px rgba(0,0,0,.25);
+}
+.login-logo{text-align:center;margin-bottom:32px}
+.login-logo i{font-size:48px;color:var(--lblue)}
+.login-logo h1{font-size:26px;font-weight:700;color:var(--navy);margin-top:8px}
+.login-logo p{font-size:13px;color:var(--gray);margin-top:4px}
+.login-card label{display:block;font-size:12px;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.login-card input{
+  width:100%;border:1.5px solid var(--border);border-radius:8px;padding:11px 14px;
+  font-size:14px;transition:border var(--trans);outline:none;
+}
+.login-card input:focus{border-color:var(--lblue)}
+.login-form-group{margin-bottom:20px}
+.btn-login{
+  width:100%;background:var(--lblue);color:var(--white);border:none;
+  padding:13px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;
+  transition:background var(--trans);margin-top:4px;
+}
+.btn-login:hover{background:var(--blue)}
+.login-error{background:#fdf2f2;color:var(--red);border:1px solid #f5c6c6;border-radius:8px;padding:10px 14px;font-size:13px;margin-top:14px;display:none}
+
+/* ── App Shell ──────────────────────────────────────────────────────────── */
+#app{display:none;height:100vh;overflow:hidden}
+
+/* ── Sidebar ────────────────────────────────────────────────────────────── */
+.sidebar{
+  position:fixed;top:0;left:0;width:var(--sidebar-w);height:100vh;
+  background:var(--navy);color:var(--white);display:flex;flex-direction:column;
+  z-index:200;transition:transform var(--trans);overflow-y:auto;
+}
+.sidebar-header{
+  padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,.1);
+  display:flex;align-items:center;gap:10px;flex-shrink:0;
+}
+.sidebar-logo{font-size:22px;font-weight:800;letter-spacing:.5px}
+.sidebar-logo span{color:var(--sky)}
+.sidebar-user{
+  padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.1);flex-shrink:0;
+}
+.sidebar-user-name{font-weight:600;font-size:13px}
+.sidebar-user-role{font-size:11px;color:var(--sky);text-transform:uppercase;letter-spacing:.5px}
+.sidebar-nav{flex:1;padding:12px 0;overflow-y:auto}
+.nav-section{padding:8px 20px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.4)}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;
+  transition:background var(--trans);font-size:13px;font-weight:500;
+  border-left:3px solid transparent;
+}
+.nav-item:hover{background:rgba(255,255,255,.08)}
+.nav-item.active{background:rgba(255,255,255,.12);border-left-color:var(--sky)}
+.nav-item i{width:18px;text-align:center;opacity:.8}
+.sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.1);flex-shrink:0}
+.btn-logout{
+  width:100%;background:rgba(255,255,255,.1);color:var(--white);border:none;
+  padding:9px;border-radius:7px;cursor:pointer;font-size:13px;transition:background var(--trans);
+}
+.btn-logout:hover{background:rgba(255,255,255,.2)}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:199}
+
+/* ── Topbar ─────────────────────────────────────────────────────────────── */
+.topbar{
+  position:fixed;top:0;left:var(--sidebar-w);right:0;height:var(--topbar-h);
+  background:var(--white);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 24px;gap:16px;z-index:100;
+  box-shadow:0 1px 4px rgba(0,0,0,.05);
+}
+.topbar-menu{display:none;background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray)}
+.topbar-title{font-size:16px;font-weight:700;color:var(--navy);flex:1}
+.topbar-actions{display:flex;align-items:center;gap:12px}
+.topbar-badge{
+  position:relative;background:none;border:none;cursor:pointer;font-size:18px;color:var(--gray);padding:4px;
+}
+.badge-dot{
+  position:absolute;top:2px;right:2px;width:9px;height:9px;
+  background:var(--red);border-radius:50%;border:2px solid var(--white);
+}
+
+/* ── Main Content ───────────────────────────────────────────────────────── */
+.main-content{
+  margin-left:var(--sidebar-w);padding-top:var(--topbar-h);
+  height:100vh;overflow-y:auto;
+}
+.page{display:none;padding:24px;animation:fadeIn .2s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ── Cards & Panels ─────────────────────────────────────────────────────── */
+.card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;margin-bottom:20px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.card-title{font-size:16px;font-weight:700;color:var(--navy)}
+.card-subtitle{font-size:12px;color:var(--gray);margin-top:2px}
+
+/* ── KPI Cards ──────────────────────────────────────────────────────────── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.kpi-card{
+  background:var(--white);border-radius:var(--radius);padding:20px;
+  box-shadow:var(--shadow);display:flex;align-items:flex-start;gap:16px;
+  border-left:4px solid var(--lblue);transition:transform var(--trans);
+}
+.kpi-card:hover{transform:translateY(-2px)}
+.kpi-card.green{border-left-color:var(--lgreen)}
+.kpi-card.red{border-left-color:var(--red)}
+.kpi-card.orange{border-left-color:var(--orange)}
+.kpi-icon{width:44px;height:44px;border-radius:10px;background:var(--sky);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--blue);flex-shrink:0}
+.kpi-card.green .kpi-icon{background:#d5f5e3;color:var(--green)}
+.kpi-card.red .kpi-icon{background:#fdf2f2;color:var(--red)}
+.kpi-card.orange .kpi-icon{background:#fef9e7;color:var(--orange)}
+.kpi-value{font-size:24px;font-weight:700;color:var(--navy);line-height:1.1}
+.kpi-label{font-size:12px;color:var(--gray);margin-top:4px}
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all var(--trans)}
+.btn-primary{background:var(--lblue);color:var(--white)}
+.btn-primary:hover{background:var(--blue)}
+.btn-success{background:var(--lgreen);color:var(--white)}
+.btn-success:hover{background:var(--green)}
+.btn-danger{background:var(--red);color:var(--white)}
+.btn-danger:hover{background:#7b241c}
+.btn-outline{background:transparent;color:var(--lblue);border:1.5px solid var(--lblue)}
+.btn-outline:hover{background:var(--sky)}
+.btn-ghost{background:var(--lgray);color:var(--gray)}
+.btn-ghost:hover{background:var(--mgray)}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn-icon{padding:7px;border-radius:7px}
+
+/* ── Tables ─────────────────────────────────────────────────────────────── */
+.table-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse}
+thead tr{background:var(--lgray)}
+th{padding:11px 14px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray);white-space:nowrap}
+td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-align:middle}
+tbody tr:hover{background:#fafbfc}
+.td-actions{display:flex;gap:6px;flex-wrap:nowrap}
+
+/* ── Badges / Tags ──────────────────────────────────────────────────────── */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-blue{background:#eaf4fb;color:var(--lblue)}
+.badge-green{background:#eafaf1;color:var(--green)}
+.badge-red{background:#fdf2f2;color:var(--red)}
+.badge-orange{background:#fef9e7;color:var(--orange)}
+.badge-gray{background:var(--lgray);color:var(--gray)}
+
+/* ── Forms ──────────────────────────────────────────────────────────────── */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+.form-group label{font-size:12px;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.4px}
+.form-group input,.form-group select,.form-group textarea{
+  border:1.5px solid var(--border);border-radius:7px;padding:9px 12px;
+  font-size:13px;outline:none;transition:border var(--trans);background:var(--white);
+  font-family:inherit;width:100%;
+}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--lblue)}
+.form-group textarea{resize:vertical;min-height:80px}
+
+/* ── Modal ──────────────────────────────────────────────────────────────── */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-backdrop.open{display:flex}
+.modal{background:var(--white);border-radius:14px;width:min(95vw,680px);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.2)}
+.modal.modal-lg{width:min(95vw,900px)}
+.modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-title{font-size:16px;font-weight:700;color:var(--navy)}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray);padding:4px;border-radius:6px;line-height:1}
+.modal-close:hover{background:var(--lgray)}
+.modal-body{padding:24px;overflow-y:auto;flex:1}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;flex-shrink:0}
+
+/* ── Search & Filters ───────────────────────────────────────────────────── */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.search-input{
+  border:1.5px solid var(--border);border-radius:7px;padding:8px 12px 8px 34px;
+  font-size:13px;outline:none;transition:border var(--trans);min-width:200px;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235d6d7e' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 10px center var(--white);
+}
+.search-input:focus{border-color:var(--lblue)}
+.filter-select{border:1.5px solid var(--border);border-radius:7px;padding:8px 12px;font-size:13px;outline:none;background:var(--white);cursor:pointer}
+.filter-select:focus{border-color:var(--lblue)}
+
+/* ── Pagination ─────────────────────────────────────────────────────────── */
+.pagination{display:flex;align-items:center;gap:6px;margin-top:16px;flex-wrap:wrap}
+.page-btn{min-width:34px;height:34px;border:1.5px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all var(--trans)}
+.page-btn:hover{border-color:var(--lblue);color:var(--lblue)}
+.page-btn.active{background:var(--lblue);border-color:var(--lblue);color:var(--white)}
+.page-btn:disabled{opacity:.4;cursor:not-allowed}
+.page-info{font-size:12px;color:var(--gray);margin-left:4px}
+
+/* ── Toasts ─────────────────────────────────────────────────────────────── */
+#toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{
+  background:var(--white);border-radius:10px;padding:12px 16px;min-width:280px;
+  box-shadow:0 8px 24px rgba(0,0,0,.15);display:flex;align-items:center;gap:10px;
+  animation:slideIn .25s ease;border-left:4px solid var(--lblue);
+}
+.toast.success{border-left-color:var(--lgreen)}
+.toast.error{border-left-color:var(--red)}
+.toast.warning{border-left-color:var(--orange)}
+.toast i{font-size:16px;flex-shrink:0}
+.toast.success i{color:var(--lgreen)}.toast.error i{color:var(--red)}.toast.warning i{color:var(--orange)}
+.toast-msg{font-size:13px;color:var(--text);flex:1}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:none;opacity:1}}
+
+/* ── Spinner ────────────────────────────────────────────────────────────── */
+.spinner{display:inline-block;width:20px;height:20px;border:2.5px solid var(--border);border-top-color:var(--lblue);border-radius:50%;animation:spin .7s linear infinite}
+.spinner.sm{width:14px;height:14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-row td{text-align:center;padding:40px;color:var(--gray)}
+
+/* ── Stock status ───────────────────────────────────────────────────────── */
+.stock-ok{color:var(--green)}.stock-bajo{color:var(--orange)}.stock-critico{color:var(--red)}
+
+/* ── Detail rows ────────────────────────────────────────────────────────── */
+.detail-line-item{display:grid;grid-template-columns:1fr auto auto auto auto;gap:8px;align-items:center;padding:8px;background:var(--lgray);border-radius:7px;margin-bottom:6px}
+.detail-line-item input{background:var(--white)}
+
+/* ── Empty state ────────────────────────────────────────────────────────── */
+.empty-state{text-align:center;padding:60px 20px;color:var(--gray)}
+.empty-state i{font-size:48px;opacity:.3;display:block;margin-bottom:12px}
+.empty-state p{font-size:14px}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:none}
+  .sidebar-overlay.open{display:block}
+  .topbar{left:0}
+  .topbar-menu{display:block}
+  .main-content{margin-left:0}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .page{padding:16px}
+  .modal{border-radius:14px 14px 0 0;position:fixed;bottom:0;left:0;right:0;width:100%;max-height:90vh}
+  .modal-backdrop{align-items:flex-end;padding:0}
+  .form-grid{grid-template-columns:1fr}
+}
+@media(max-width:420px){
+  .kpi-grid{grid-template-columns:1fr}
+  #toast-container{left:16px;right:16px;bottom:16px}
+  .toast{min-width:unset}
+}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ─────────────────────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <i class="fas fa-mountain"></i>
+      <h1>CrushFlow V2</h1>
+      <p>Sistema de gestión empresarial</p>
+    </div>
+    <form id="login-form">
+      <div class="login-form-group">
+        <label>Correo electrónico</label>
+        <input type="email" id="login-email" placeholder="usuario@empresa.com" required autocomplete="email">
+      </div>
+      <div class="login-form-group">
+        <label>Contraseña</label>
+        <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password">
+      </div>
+      <button class="btn-login" type="submit" id="login-btn">
+        <span id="login-btn-text">Iniciar sesión</span>
+      </button>
+      <div class="login-error" id="login-error"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ── APP SHELL ──────────────────────────────────────────────────────────── -->
+<div id="app">
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <i class="fas fa-mountain" style="font-size:22px;color:var(--sky)"></i>
+      <div class="sidebar-logo">Crush<span>Flow</span></div>
+    </div>
+    <div class="sidebar-user">
+      <div class="sidebar-user-name" id="sb-user-name">—</div>
+      <div class="sidebar-user-role" id="sb-user-role">—</div>
+    </div>
+    <nav class="sidebar-nav" id="sidebar-nav"></nav>
+    <div class="sidebar-footer">
+      <button class="btn-logout" onclick="App.logout()"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</button>
+    </div>
+  </nav>
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <button class="topbar-menu" id="menu-toggle"><i class="fas fa-bars"></i></button>
+    <span class="topbar-title" id="page-title">Dashboard</span>
+    <div class="topbar-actions">
+      <button class="topbar-badge" title="Stock crítico" onclick="App.navigate('inventario')">
+        <i class="fas fa-box"></i><span class="badge-dot" id="stock-alert" style="display:none"></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Pages -->
+  <main class="main-content" id="main-content">
+    <div id="page-dashboard"  class="page"></div>
+    <div id="page-inventario" class="page"></div>
+    <div id="page-movimientos"class="page"></div>
+    <div id="page-compras"    class="page"></div>
+    <div id="page-ventas"     class="page"></div>
+    <div id="page-rrhh"       class="page"></div>
+    <div id="page-finanzas"   class="page"></div>
+    <div id="page-reportes"   class="page"></div>
+    <div id="page-usuarios"   class="page"></div>
+    <div id="page-config"     class="page"></div>
+  </main>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- Core API & App -->
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<!-- Modules -->
+<script src="js/modules/dashboard.js"></script>
+<script src="js/modules/inventario.js"></script>
+<script src="js/modules/movimientos.js"></script>
+<script src="js/modules/compras.js"></script>
+<script src="js/modules/ventas.js"></script>
+<script src="js/modules/rrhh.js"></script>
+<script src="js/modules/finanzas.js"></script>
+<script src="js/modules/reportes.js"></script>
+<script src="js/modules/usuarios.js"></script>
+<script src="js/modules/config.js"></script>
+</body>
+</html>
